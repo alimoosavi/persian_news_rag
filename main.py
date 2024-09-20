@@ -3,11 +3,11 @@ import django
 import logging
 import asyncio
 
-from rag_app.news_crawlers.irna_crawler import IRNACrawler
+from rag_app.crawlers.irna_crawler import IRNALinksCrawler
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'persian_news_rag.settings')
 django.setup()
 
 logger = logging.getLogger(__name__)
-crawler = IRNACrawler(logger=logger)
+crawler = IRNALinksCrawler(logger=logger)
 asyncio.run(crawler.run())
