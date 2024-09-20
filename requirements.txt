@@ -1,0 +1,8 @@
+selenium
+beautifulsoup4
+jdatetime
+psycopg2-binary
+khayyam
+ipython
+django-extensions
+aiohttp
