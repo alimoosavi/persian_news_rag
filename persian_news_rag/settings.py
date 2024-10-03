@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'django_extensions',
-    'rag_app'
+    'rag_app',
+    # 'sample'
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,12 @@ WSGI_APPLICATION = "persian_news_rag.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 SHELL_PLUS = "ipython"
+
+# HOST: 172.206.61.12
+# USER: inter_user
+# PASSWORD: Intervew#2024
+#
+# 3306
 
 DATABASES = {
     'default': {
@@ -129,10 +136,10 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
-            'level': 'DEBUG',
+        'console_error': {
+            'level': 'ERROR',
             'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',  # Logs will be sent to stdout
+            'stream': 'ext://sys.stdout',
             'formatter': 'verbose',
         },
     },
@@ -144,10 +151,9 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+            'handlers': ['console_error'],
+            'level': 'ERROR',
             'propagate': True,
         },
-        # Define additional loggers here if needed
     },
 }

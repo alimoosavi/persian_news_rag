@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 import datetime
+from urllib.parse import urljoin
 
 
 class BaseModel(models.Model):
@@ -30,20 +31,31 @@ class NewsCategory(BaseModel):
 
 
 class NewsLink(BaseModel):
+    BASE_URL = 'https://www.irna.ir/'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     category = models.ForeignKey('NewsCategory', on_delete=models.DO_NOTHING, to_field='id')
     news_link = models.CharField(max_length=400)
     date = models.DateTimeField(default=datetime.datetime.now)
     has_processed = models.BooleanField(default=False)
 
+    def get_full_url(self):
+        return urljoin(self.BASE_URL, self.news_link)
+
     class Meta:
         unique_together = ('category', 'news_link')
 
 
 class News(BaseModel):
-    news_link = models.ForeignKey('NewsLink', on_delete=models.DO_NOTHING, to_field='id')
+    news_source = models.CharField(max_length=255)
+    news_category = models.CharField(max_length=255)
+    date = models.DateTimeField(default=datetime.datetime.now)
+    news_link = models.CharField(max_length=400)
     title = models.CharField(max_length=255)
     body = models.TextField()
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        unique_together = ('news_source', 'news_category', 'news_link',)

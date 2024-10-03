@@ -6,3 +6,12 @@ khayyam
 ipython
 django-extensions
 aiohttp
+webdriver-manager
+appdirs
+mteb
+notebook
+transformers
+torch
+sentencepiece
+openai
+datasets
