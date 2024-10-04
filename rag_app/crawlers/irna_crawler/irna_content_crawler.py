@@ -1,9 +1,8 @@
-import requests
-import utils
 from bs4 import BeautifulSoup
 from django.core.paginator import Paginator
 
-from rag_app.models import NewsSource, NewsCategory, NewsLink, News
+from rag_app.crawlers import utils
+from rag_app.models import NewsSource, NewsLink, News
 
 
 class IRNAContentCrawler:
@@ -14,13 +13,11 @@ class IRNAContentCrawler:
     def __init__(self, logger):
         self.logger = logger
         self.source = None
-        self.categories = None
         self.not_processed_links = None
 
     def setup(self):
         self.source = NewsSource.objects.get(name=self.SOURCE_NAME)
-        self.categories = NewsCategory.objects.filter(source=self.source)
-        self.not_processed_links = NewsLink.objects.filter(category__source=self.source,
+        self.not_processed_links = NewsLink.objects.filter(source=self.source,
                                                            has_processed=False).order_by('-date')
 
     @staticmethod
@@ -39,7 +36,8 @@ class IRNAContentCrawler:
             nl: self.fetch(nl.get_full_url())
             for nl in batch
         }
-        return {nl: self.process_news_content_page(html_content) if html_content else None
+        return {nl: self.process_news_content_page(html_content)
+        if html_content else None
                 for nl, html_content in results.items()}
 
     @staticmethod
@@ -68,8 +66,7 @@ class IRNAContentCrawler:
                 if news_data is not None:
                     news.append(
                         News(
-                            news_source=news_link.category.source.name,
-                            news_category=news_link.category.category_name,
+                            news_source=news_link.source.name,
                             date=news_link.date,
                             news_link=news_link.get_full_url(),
                             title=news_data.get('title'),

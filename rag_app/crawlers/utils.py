@@ -47,29 +47,3 @@ def run_curl_command(url):
         output = stream.read()
 
     return output
-
-# def get_web_driver():
-#     # Get a cross-platform cache directory
-#     cache_dir = user_cache_dir("webdriver_manager", APP_NAME)
-#     os.makedirs(cache_dir, exist_ok=True)
-#
-#     # Path to store the WebDriver
-#     driver_cache_file = os.path.join(cache_dir, "webdriver_path.txt")
-#
-#     # Check if WebDriver path is already cached
-#     if os.path.exists(driver_cache_file):
-#         with open(driver_cache_file, 'r') as file:
-#             driver_path = file.read().strip()
-#     else:
-#         # If not cached, install and save path
-#         driver_path = ChromeDriverManager().install()
-#         with open(driver_cache_file, 'w') as file:
-#             file.write(driver_path)
-#
-#     chrome_options = Options()
-#     chrome_options.add_argument("--headless")
-#     chrome_options.add_argument("--no-sandbox")
-#     chrome_options.add_argument("--disable-dev-shm-usage")
-#
-#     # Use the cached or newly installed driver path
-#     return webdriver.Chrome(service=Service(driver_path), options=chrome_options)

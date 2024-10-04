@@ -21,34 +21,19 @@ class NewsSource(BaseModel):
         return self.name
 
 
-class NewsCategory(BaseModel):
-    category_id = models.CharField(max_length=255)
-    category_name = models.CharField(max_length=255)
-    source = models.ForeignKey('NewsSource', on_delete=models.DO_NOTHING, to_field='id')
-
-    class Meta:
-        unique_together = ('category_name', 'category_id')
-
-
 class NewsLink(BaseModel):
-    BASE_URL = 'https://www.irna.ir/'
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    category = models.ForeignKey('NewsCategory', on_delete=models.DO_NOTHING, to_field='id')
+    source = models.ForeignKey(NewsSource, on_delete=models.DO_NOTHING, related_name='links')
     news_link = models.CharField(max_length=400)
     date = models.DateTimeField(default=datetime.datetime.now)
     has_processed = models.BooleanField(default=False)
 
     def get_full_url(self):
-        return urljoin(self.BASE_URL, self.news_link)
-
-    class Meta:
-        unique_together = ('category', 'news_link')
+        return urljoin(self.source.base_url, self.news_link)
 
 
 class News(BaseModel):
     news_source = models.CharField(max_length=255)
-    news_category = models.CharField(max_length=255)
     date = models.DateTimeField(default=datetime.datetime.now)
     news_link = models.CharField(max_length=400)
     title = models.CharField(max_length=255)
@@ -58,4 +43,4 @@ class News(BaseModel):
         return self.title
 
     class Meta:
-        unique_together = ('news_source', 'news_category', 'news_link',)
+        unique_together = ('news_source', 'news_link',)

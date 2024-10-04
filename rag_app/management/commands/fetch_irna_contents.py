@@ -1,4 +1,3 @@
-# your_app/management/commands/your_command.py
 import logging
 
 from django.core.management.base import BaseCommand
