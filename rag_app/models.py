@@ -38,6 +38,7 @@ class News(BaseModel):
     news_link = models.CharField(max_length=400)
     title = models.CharField(max_length=255)
     body = models.TextField()
+    has_processed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title

@@ -5,6 +5,7 @@ psycopg2-binary
 khayyam
 ipython
 django-extensions
+jupyter
 aiohttp
 webdriver-manager
 appdirs
@@ -15,3 +16,4 @@ torch
 sentencepiece
 openai
 datasets
+pandas

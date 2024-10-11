@@ -1,3 +1,5 @@
+import threading
+
 from bs4 import BeautifulSoup
 from django.core.paginator import Paginator
 
@@ -7,8 +9,7 @@ from rag_app.models import NewsSource, NewsLink, News
 
 class IRNAContentCrawler:
     SOURCE_NAME = 'IRNA'
-    WORKERS_COUNT = 5
-    BATCH_SIZE = 15
+    BATCH_SIZE = 20
 
     def __init__(self, logger):
         self.logger = logger
@@ -31,14 +32,29 @@ class IRNAContentCrawler:
             yield batch
 
     def fetch_batch_concurrently(self, batch):
+        results = {}
+        threads = []
 
-        results = {
-            nl: self.fetch(nl.get_full_url())
-            for nl in batch
-        }
-        return {nl: self.process_news_content_page(html_content)
-        if html_content else None
-                for nl, html_content in results.items()}
+        def thread_fetch(news_link):
+            html_content = self.fetch(news_link.get_full_url())
+            results[news_link] = html_content
+
+        # Create and start threads
+        for nl in batch:
+            thread = threading.Thread(target=thread_fetch, args=(nl,))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        result_dict = {}
+        for nl, html_content in results.items():
+            try:
+                result_dict[nl] = self.process_news_content_page(html_content) if html_content else None
+            except:
+                result_dict[nl] = None
+        return result_dict
 
     @staticmethod
     def process_news_content_page(html_content):

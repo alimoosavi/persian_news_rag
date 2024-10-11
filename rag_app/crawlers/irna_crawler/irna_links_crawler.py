@@ -1,30 +1,17 @@
-from multiprocessing import cpu_count
 from urllib.parse import urlencode, urljoin
 
 import jdatetime
+import threading
 from bs4 import BeautifulSoup
-from khayyam import JalaliDatetime
 
+from rag_app.crawlers import utils
 from rag_app.models import NewsSource, NewsLink
-from rag_app.crawlers.utils import retry_on_exception, get_web_driver
 
 
 class IRNALinksCrawler:
     SOURCE_NAME = 'IRNA'
     IRNA_NEWS_TYPE = 1
-    PERSIAN_TO_WESTERN = {
-        '۰': '0',
-        '۱': '1',
-        '۲': '2',
-        '۳': '3',
-        '۴': '4',
-        '۵': '5',
-        '۶': '6',
-        '۷': '7',
-        '۸': '8',
-        '۹': '9'
-    }
-    WORKERS_COUNT = cpu_count()
+    WORKERS_COUNT = 10
 
     def __init__(self, logger, start_jalali_date, end_jalali_date):
         self.logger = logger
@@ -32,38 +19,6 @@ class IRNALinksCrawler:
         self.end_jalali_date = end_jalali_date
         self.source = None
         self.fetched_links = set({})
-
-    @staticmethod
-    def remove_empty_strings(strings):
-        return [item for item in strings if len(item) != 0]
-
-    @classmethod
-    def convert_jdatetime_to_datetime(cls, jdatetime_str):
-        datetime_str = jdatetime_str.copy()
-        for persian_digit, western_digit in cls.PERSIAN_TO_WESTERN.items():
-            datetime_str = datetime_str.replace(persian_digit, western_digit)
-        return (JalaliDatetime
-                .strptime(datetime_str, '%Y-%m-%d %H:%M').todatetime())
-
-    @property
-    def start_date(self):
-        return self.start_jalali_date.todatetime()
-
-    @property
-    def end_date(self):
-        return self.end_jalali_date.todatetime()
-
-    @staticmethod
-    @retry_on_exception(retries=3, delay=1)
-    def fetch(link):
-        driver = get_web_driver()
-        try:
-            driver.get(link)
-            return driver.page_source
-        except:
-            return None
-        finally:
-            driver.quit()
 
     def datetime_generator(self):
         current_jalali_date = self.start_jalali_date
@@ -77,14 +32,30 @@ class IRNALinksCrawler:
         self.fetched_links = set(NewsLink.
                                  objects.
                                  filter(source=self.source,
-                                        date__range=(self.start_date, self.end_date))
+                                        date__range=(self.start_jalali_date.togregorian(),
+                                                     self.end_jalali_date.togregorian()))
                                  .values_list('news_link', flat=True))
 
     def run(self):
         self.setup()
+        datetime_range = list(self.datetime_generator())
+        time_batches = utils.split_list(datetime_range, self.WORKERS_COUNT)
 
-        for jalali_date in self.datetime_generator():
-            self.logger.log('Crawling jalali date', jalali_date)
+        threads = [
+            threading.Thread(target=self.get_datetime_batch,
+                             args=(time_batch,))
+            for time_batch in time_batches
+        ]
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+    def get_datetime_batch(self, time_batch):
+        for jalali_date in time_batch:
+            # self.logger.log(f'Crawling jalali date: {jalali_date}')
             self.get_list_of_news(jalali_date=jalali_date)
 
     def get_list_of_news(self, jalali_date):
@@ -110,7 +81,7 @@ class IRNALinksCrawler:
             batch = [
                 NewsLink(source=self.source,
                          news_link=item['news_link'],
-                         date=self.convert_jdatetime_to_datetime(item['time']))
+                         date=utils.convert_jdatetime_to_gregorian(item['time']))
                 for item in fetched_news_links.values()
             ]
 
@@ -126,7 +97,7 @@ class IRNALinksCrawler:
         full_url = urljoin(self.source.base_url, "?" + query_string)
 
         news_links = {}
-        html_content = self.fetch(full_url)
+        html_content = utils.fetch(full_url)
         if html_content is None:
             return news_links
 

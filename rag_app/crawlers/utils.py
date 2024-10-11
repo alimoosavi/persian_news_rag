@@ -4,6 +4,7 @@ import os
 import requests
 from selenium import webdriver
 from appdirs import user_cache_dir
+from khayyam import JalaliDatetime
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -40,6 +41,18 @@ def get_web_driver():
     return webdriver.Chrome(service=Service(driver_path), options=chrome_options)
 
 
+@retry_on_exception(retries=3, delay=1)
+def fetch(link):
+    driver = get_web_driver()
+    try:
+        driver.get(link)
+        return driver.page_source
+    except:
+        return None
+    finally:
+        driver.quit()
+
+
 def run_curl_command(url):
     command = f"curl -s {url}"
 
@@ -47,3 +60,33 @@ def run_curl_command(url):
         output = stream.read()
 
     return output
+
+
+def split_list(lst, n):
+    if n <= 0:
+        return []
+    avg = len(lst) // n
+    return [lst[i:i + avg + (1 if i < len(lst) % n else 0)] for i in range(0, len(lst), avg + 1)]
+
+
+PERSIAN_TO_WESTERN = {
+    '۰': '0',
+    '۱': '1',
+    '۲': '2',
+    '۳': '3',
+    '۴': '4',
+    '۵': '5',
+    '۶': '6',
+    '۷': '7',
+    '۸': '8',
+    '۹': '9'
+}
+
+
+def convert_jdatetime_to_gregorian(jdatetime_str):
+    datetime_str = jdatetime_str
+    for persian_digit, western_digit in PERSIAN_TO_WESTERN.items():
+        datetime_str = datetime_str.replace(persian_digit, western_digit)
+    return (JalaliDatetime
+            .strptime(datetime_str,
+                      '%Y-%m-%d %H:%M').todatetime())
